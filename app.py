@@ -45,7 +45,7 @@ st.subheader("📈 Recent Readings")
 import pandas as pd
 
 # Google Sheet से डेटा लाना
-sheet_url = "https://script.google.com/macros/s/AKfycbzYxxxxxx/exec"  # <-- अपना नया GET URL डालो
+sheet_url = "https://script.google.com/macros/s/AKfycbyUxpnCVLx_5L5z1czcIOsS8ZBB5bWxWRj0dSrhNSPw76CvrYnxC96XOo_dX5r6dKgq/exec"  # <-- अपना नया GET URL डालो
 
 try:
     data = requests.get(sheet_url).json()
