@@ -42,5 +42,17 @@ if st.sidebar.button("💾 Save Reading"):
 
 # --- Data Display Section ---
 st.subheader("📈 Recent Readings")
+import pandas as pd
+
+# Google Sheet से डेटा लाना
+sheet_url = "https://script.google.com/macros/s/AKfycbzYxxxxxx/exec"  # <-- अपना नया GET URL डालो
+
+try:
+    data = requests.get(sheet_url).json()
+    df = pd.DataFrame(data[1:], columns=data[0])
+    st.dataframe(df.tail(10))
+except Exception as e:
+    st.warning(f"डेटा लोड नहीं हो सका: {e}")
+
 
 st.info("यह सेक्शन Google Sheet से auto-load किया जाएगा (Next Step में)।")
