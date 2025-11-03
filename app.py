@@ -1,37 +1,46 @@
 import streamlit as st
-from PIL import Image
-import pytesseract
-import re
-import io
-import numpy as np
+import requests
+import datetime
 
+# --- Page Config ---
 st.set_page_config(page_title="MeterEye Dashboard", page_icon="⚡", layout="wide")
 
-st.title("⚡ MeterEye – Smart Meter Reading Extractor")
+# --- Title ---
+st.title("⚡ MeterEye - Smart Electricity Reading Dashboard")
 
-uploaded = st.file_uploader("Upload meter image (JPG/PNG)", type=["jpg", "jpeg", "png"])
-if uploaded:
-    image = Image.open(uploaded)
-    st.image(image, caption="Uploaded Meter Image", use_container_width=True)
+# --- Sidebar ---
+st.sidebar.header("📊 Input Panel")
 
-    # OCR text extraction
-    text = pytesseract.image_to_string(image)
+# Input fields
+meter_id = st.sidebar.text_input("Meter ID", "")
+reading = st.sidebar.number_input("Current Reading (kWh)", min_value=0.0, step=0.1)
+remarks = st.sidebar.text_area("Remarks", "")
 
-    # Try to pick useful readings
-    units = re.findall(r"[\d]+\.\d+\s?kWh", text)
-    max_demand = re.findall(r"[\d]+\.\d+\s?kW", text)
+# Submit button
+if st.sidebar.button("💾 Save Reading"):
+    if meter_id and reading > 0:
+        # Google Apps Script URL (👇 यही तुम्हारे Apps Script से मिला हुआ URL डालो)
+        script_url = "https://script.google.com/macros/s/AKfycbyCXcakkA0QUntf-a00AHOEUg8hgsw7daAvAX0rE7u5SAYNiAL8Mrcprl2lmfXkPbf8/exec"
 
-    st.subheader("📄 Raw OCR Text")
-    st.text(text)
+        payload = {
+            "MeterID": meter_id,
+            "Reading": reading,
+            "Remarks": remarks,
+            "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
 
-    st.subheader("🔍 Extracted Readings")
-    st.write({
-        "Units (kWh)": units[0] if units else "Not detected",
-        "Max Demand (kW)": max_demand[0] if max_demand else "Not detected"
-    })
+        try:
+            response = requests.post(script_url, data=payload)
+            if response.status_code == 200:
+                st.success("✅ Reading saved successfully!")
+            else:
+                st.error(f"❌ Failed to save reading. Error code: {response.status_code}")
+        except Exception as e:
+            st.error(f"⚠️ Connection error: {e}")
+    else:
+        st.warning("Please fill Meter ID and Reading properly!")
 
-    # Save to CSV (for Sheet sync later)
-    if st.button("Save Reading"):
-        with open("readings.csv", "a") as f:
-            f.write(f"{uploaded.name},{units},{max_demand}\n")
-        st.success("Saved locally! (Will sync to Sheet)")
+# --- Data Display Section ---
+st.subheader("📈 Recent Readings")
+
+st.info("यह सेक्शन Google Sheet से auto-load किया जाएगा (Next Step में)।")
