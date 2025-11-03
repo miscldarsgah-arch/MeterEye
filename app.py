@@ -1,3 +1,6 @@
+import requests
+import json
+SHEET_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyCXcakkA0QUntf-a00AHOEUg8hgsw7daAvAX0rE7u5SAYNiAL8Mrcprl2lmfXkPbf8/exec"
 import streamlit as st
 from PIL import Image
 import pytesseract
@@ -32,6 +35,21 @@ if uploaded:
 
     # Save to CSV (for Sheet sync later)
     if st.button("Save Reading"):
-        with open("readings.csv", "a") as f:
-            f.write(f"{uploaded.name},{units},{max_demand}\n")
-        st.success("Saved locally! (Will sync to Sheet)")
+    payload = {
+        "fileName": uploaded.name if uploaded is not None else "",
+        "units": (units[0] if isinstance(units, list) and units else "") ,
+        "maxDemand": (max_demand[0] if isinstance(max_demand, list) and max_demand else "")
+    }
+    try:
+        r = requests.post(SHEET_WEB_APP_URL, json=payload, timeout=15)
+        if r.status_code == 200:
+            # Apps Script returns "Success" (or 200) on success
+            st.success("✅ Reading saved to Google Sheet!")
+        else:
+            st.error(f"⚠️ Failed to save. Server returned {r.status_code}")
+            st.write(r.text)
+    except requests.exceptions.Timeout:
+        st.error("⚠️ Request timed out. Check your network or Apps Script URL.")
+    except Exception as e:
+        st.error(f"Error while saving: {e}")
+
