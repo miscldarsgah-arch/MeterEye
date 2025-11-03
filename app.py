@@ -20,7 +20,7 @@ remarks = st.sidebar.text_area("Remarks", "")
 if st.sidebar.button("💾 Save Reading"):
     if meter_id and reading > 0:
         # Google Apps Script URL (👇 यही तुम्हारे Apps Script से मिला हुआ URL डालो)
-        script_url = "https://script.google.com/macros/s/AKfycbyCXcakkA0QUntf-a00AHOEUg8hgsw7daAvAX0rE7u5SAYNiAL8Mrcprl2lmfXkPbf8/exec"
+        script_url = "https://script.google.com/macros/s/AKfycby5b8RUU-x7mLhHmLFMBCC2GGhokhZhcOos7hM0EVAnFKqMy7PMHW2VVK55YyUP0j5W/exec"
 
         payload = {
             "MeterID": meter_id,
