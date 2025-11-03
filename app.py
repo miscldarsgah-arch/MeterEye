@@ -1,44 +1,37 @@
 import streamlit as st
-import cv2, pytesseract, re, tempfile, numpy as np
+from PIL import Image
+import pytesseract
+import re
+import io
+import numpy as np
 
-st.set_page_config(page_title="MeterEye", page_icon="📟")
-st.title("📟 MeterEye — Smart Meter Reading Extractor")
-st.write("Upload your meter video to automatically extract readings using OCR.")
+st.set_page_config(page_title="MeterEye Dashboard", page_icon="⚡", layout="wide")
 
-uploaded = st.file_uploader("Upload meter video", type=["mp4", "mov", "avi"])
+st.title("⚡ MeterEye – Smart Meter Reading Extractor")
+
+uploaded = st.file_uploader("Upload meter image (JPG/PNG)", type=["jpg", "jpeg", "png"])
 if uploaded:
-    tfile = tempfile.NamedTemporaryFile(delete=False)
-    tfile.write(uploaded.read())
-    cap = cv2.VideoCapture(tfile.name)
-    frame_interval = 30  # read every 30th frame
-    readings = []
+    image = Image.open(uploaded)
+    st.image(image, caption="Uploaded Meter Image", use_container_width=True)
 
-    st.info("Processing video... Please wait 1–2 minutes.")
-    i = 0
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        if i % frame_interval == 0:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            text = pytesseract.image_to_string(gray)
-            if text.strip():
-                readings.append(text)
-        i += 1
-    cap.release()
+    # OCR text extraction
+    text = pytesseract.image_to_string(image)
 
-    full_text = "\n".join(readings)
+    # Try to pick useful readings
+    units = re.findall(r"[\d]+\.\d+\s?kWh", text)
+    max_demand = re.findall(r"[\d]+\.\d+\s?kW", text)
 
-    # Extract key values
-    units = re.findall(r"([\d\.]+)\s*kWh", full_text)
-    md = re.findall(r"([\d\.]+)\s*kW", full_text)
-    phases = re.findall(r"(R|Y|B)\s*:?[\s]*([\d\.]+)", full_text)
+    st.subheader("📄 Raw OCR Text")
+    st.text(text)
 
-    st.subheader("📋 Extracted Readings")
-    st.write("**Energy Consumption (kWh):**", units[-1] if units else "Not found")
-    st.write("**Maximum Demand (kW):**", md[-1] if md else "Not found")
-    if phases:
-        st.write("**Phase-wise Data:**")
-        for p, v in phases:
-            st.write(f"{p} Phase → {v}")
-    st.text_area("🧾 Raw Detected Text", full_text, height=200)
+    st.subheader("🔍 Extracted Readings")
+    st.write({
+        "Units (kWh)": units[0] if units else "Not detected",
+        "Max Demand (kW)": max_demand[0] if max_demand else "Not detected"
+    })
+
+    # Save to CSV (for Sheet sync later)
+    if st.button("Save Reading"):
+        with open("readings.csv", "a") as f:
+            f.write(f"{uploaded.name},{units},{max_demand}\n")
+        st.success("Saved locally! (Will sync to Sheet)")
